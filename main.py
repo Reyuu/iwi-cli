@@ -16,8 +16,6 @@ pad.syncok(1)
 pad.timeout(0)
 curses.noecho()
 pad_pos = 0
-curses.curs_set(0)
-
 def fetchSettings():
     config = ConfigParser.ConfigParser()
     config.read('configirc.ini')
@@ -62,21 +60,17 @@ def maketextbox(h,w,y,x,value=u"",deco=None,textColorpair=0,decoColorpair=0):
     nw.attron(textColorpair)
     screen.refresh()
     return nw,txtbox
-textwin,textbox = maketextbox(1,79, 23,1,u"")
+textwin,textbox = maketextbox(0,160, 23,1,u"")
 
 def multi_detect(string, inputArray):
     for item in inputArray:
         if item in string:
-            print '\a'
+            curses.beep()
             return 1
     return 0
 
-def print_date(msg):
+def counting_lines(msg):
     global counter2
-    screen.refresh()
-    pad.refresh(0,0, 0,0, 22,80)
-    unix = msg.decode('utf-8', 'ignore')
-    msg = unix.encode('utf-8', 'ignore')
     if(counter2 == 21):
         if(len(msg) >= 80):
             pad.scrollok(1)
@@ -119,14 +113,32 @@ def print_date(msg):
         counter2 += 1
     else:
         pass
+
+def print_date(msg, colour):
     screen.refresh()
     pad.refresh(0,0, 0,0, 22,80)
-    pad.addstr(strftime("[*] [%H:%M:%S] "+msg+"\n", gmtime()))
+    unix = msg.decode('utf-8', 'ignore')
+    msg = unix.encode('utf-8', 'ignore')
+    counting_lines(msg)
+    screen.refresh()
+    pad.refresh(0,0, 0,0, 22,80)
+    if(curses.has_colors == True):
+        pad.addstr(strftime("[*] [%H:%M:%S] ", gmtime()), curses.color_pair(colour))
+        pad.addstr(msg+"\n")
+    elif(colour == None or curses.has_colors == False):
+        pad.addstr(strftime("[*] [%H:%M:%S] "+msg+"\n", gmtime()))
+    else:
+        pad.addstr(strftime("[*] [%H:%M:%S] "+msg+"\n", gmtime()))
     screen.refresh()
     pad.refresh(0,0, 0,0, 22,80)
     
 class Irc:
     def __init__(self):
+        curses.curs_set(0)
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_pair(1, 6, -1)
+        curses.init_pair(2, 7, -1)
         self.onChannelMsg = 'Sup cunts.'
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.lastHL = 'Null'
@@ -134,7 +146,7 @@ class Irc:
         self.socket.send(msg + "\r\n")
     def sendMsg(self, chan, msg):
         self.socket.send('PRIVMSG '+chan+' :'+msg+'\r\n')
-        print_date('[%s] to <%s>: %s' % (NICK, chan, msg))
+        print_date('[%s] to <%s>: %s' % (NICK, chan, msg), 11)
 
     def connect(self):
         #config_fetch()# just couldn't get it to work
@@ -173,7 +185,7 @@ class Irc:
                     if line[0] == "PING":
                         self.send("PONG %s" % line[1])
                         if PING:
-                            print_date("Pinged and ponged.")
+                            print_date("Pinged and ponged.", None)
                         else:
                             pass
                     if line[1] == "PRIVMSG":
@@ -183,31 +195,24 @@ class Irc:
                         hld = multi_detect(message, HighLight)
                         if hld:
                             self.lastHL = username
-                        print_date("[%s] to <%s>: %s" % (username, channel, message))
+                        print_date("[%s] to <%s>: %s" % (username, channel, message), curses.COLOR_RED)
                         execfile(PLUGINFILE)
                     elif line[1] == "JOIN":
                         username = (line[0].split('!')[0])[1:]
                         if NoticeMsgOnChannelJoinOn == 1:
                             self.send("NOTICE "+username+" :"+NoticeMsgOnChannelJoin)
-                        print_date("[%s] joined the channel <%s>" % (username, ' '.join(line[2:])[1:]))
+                        print_date("[%s] joined the channel <%s>" % (username, ' '.join(line[2:])[1:]), 2)
                     elif line[1] == "QUIT":
                         username = (line[0].split('!')[0])[1:]
-                        print_date("[%s] has quit: %s" % (username, ' '.join(line[2:])[1:]))
+                        print_date("[%s] has quit: %s" % (username, ' '.join(line[2:])[1:]), None)
                     elif line[1] == "PART":
                         username = (line[0].split('!')[0])[1:]
                         channel = line[2]
-                        print_date("[%s] leaves from <%s>" % (username, channel))
+                        print_date("[%s] leaves from <%s>" % (username, channel), None)
                     else:
-                        '''meineText = ' '.join(line)
+                        meineText = ' '.join(line)
+                        counting_lines(meineText)
                         pad.addstr(' '.join(line)+'\n')
-                        if(len(meineText) > 80):
-                            pad.scroll(2)
-                        elif(len(meineText) > 160):
-                            pad.scroll(3)
-                        elif(len(meineText) > 160+80):
-                            pad.scroll(4)
-                        else:
-                            pad.scroll(1)'''
                         pad.refresh(0,0, 0,0, 22,80)
                         pass
                 except IndexError:
@@ -229,6 +234,7 @@ class InputThreadIrc (threading.Thread):
         global CHAN
         threading.Thread.__init__(self)
         #socket_x1.fetchSettings()
+        curses.curs_set(1)
         self.lastMessage = [CHAN, '']
         self.messages = {}
         self.variables = {}
@@ -237,7 +243,6 @@ class InputThreadIrc (threading.Thread):
         global CHAN
         while 1:
             try:
-                curses.curs_set(1)
                 self.line2 = textbox.edit()
                 unix = self.line2.decode('utf-8', 'ignore')
                 self.line2 = unix.encode('utf-8', 'ignore')
@@ -304,6 +309,26 @@ class InputThreadIrc (threading.Thread):
                             new_msg += word
                         new_msg += ' '
                     self.line2 = new_msg
+                elif command in ('names', 'n'):
+                    tunnel = specialChan
+                    if len(inputArray) > 1:
+                        tunnel = inputArray[1]
+                    IrcC.send('NAMES '+tunnel)
+                    execute = False
+                elif command == 'part':
+                    chan = specialChan
+                    if len(inputArray) > 1:
+                        chan = inputArray[1]
+                    IrcC.send('PART '+chan)
+                    execute = False
+                    print_date("[%s] leaves from <%s>" % (NICK, chan), None)
+                elif command == 'nick':
+                    global NICK
+                    execute = False
+                    new_nick = inputArray[1]
+                    IrcC.send('NICK '+new_nick)
+                    print_date("[%s] changes nick to [%s]" % (NICK, new_nick), None)
+                    NICK = new_nick
             elif execute:
                 IrcC.logger.info(" ["+NICK+"] "+self.line2+" to "+specialChan+":")
                 IrcC.sendMsg(specialChan, self.line2)
