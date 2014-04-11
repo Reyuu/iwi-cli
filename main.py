@@ -8,6 +8,10 @@ counter = 0
 counter2 = 0
 locale.setlocale(locale.LC_ALL,"")
 screen = curses.initscr()
+curses.start_color()
+curses.use_default_colors()
+for i in range(0, curses.COLORS):
+    curses.init_pair(i + 1, i, -1)
 pad = curses.newpad(24, 80)
 pad.idlok(1)
 pad.scrollok(1)
@@ -49,18 +53,18 @@ def maketextbox(h,w,y,x,value=u"",deco=None,textColorpair=0,decoColorpair=0):
     global nw
     nw = curses.newwin(h,w,y,x)
     txtbox = curses.textpad.Textbox(nw,insert_mode=True)
-    if deco==u"frame":
+    if deco=="frame":
         screen.attron(decoColorpair)
         curses.textpad.rectangle(screen,y-1,x-1,y+h,x+w)
         screen.attroff(decoColorpair)
-    elif deco==u"underline":
+    elif deco=="underline":
         screen.hline(y+1,x,underlineChr,w,decoColorpair)
  
     nw.addstr(0,0,value,textColorpair)
     nw.attron(textColorpair)
     screen.refresh()
     return nw,txtbox
-textwin,textbox = maketextbox(0,160, 23,1,u"")
+textwin,textbox = maketextbox(0,160, 23,1,"")
 
 def multi_detect(string, inputArray):
     for item in inputArray:
@@ -122,10 +126,11 @@ def print_date(msg, colour):
     counting_lines(msg)
     screen.refresh()
     pad.refresh(0,0, 0,0, 22,80)
-    if(curses.has_colors == True):
-        pad.addstr(strftime("[*] [%H:%M:%S] ", gmtime()), curses.color_pair(colour))
-        pad.addstr(msg+"\n")
-    elif(colour == None or curses.has_colors == False):
+    if(curses.has_colors):
+        x = strftime("[*] [%H:%M:%S] ", gmtime())
+        pad.addstr(str(x), curses.color_pair(colour))
+        pad.addstr(str(msg)+"\n")
+    elif(colour == None):
         pad.addstr(strftime("[*] [%H:%M:%S] "+msg+"\n", gmtime()))
     else:
         pad.addstr(strftime("[*] [%H:%M:%S] "+msg+"\n", gmtime()))
@@ -134,11 +139,6 @@ def print_date(msg, colour):
     
 class Irc:
     def __init__(self):
-        curses.curs_set(0)
-        curses.start_color()
-        curses.use_default_colors()
-        curses.init_pair(1, 6, -1)
-        curses.init_pair(2, 7, -1)
         self.onChannelMsg = 'Sup cunts.'
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.lastHL = 'Null'
@@ -146,7 +146,7 @@ class Irc:
         self.socket.send(msg + "\r\n")
     def sendMsg(self, chan, msg):
         self.socket.send('PRIVMSG '+chan+' :'+msg+'\r\n')
-        print_date('[%s] to <%s>: %s' % (NICK, chan, msg), 11)
+        print_date('[%s] to <%s>: %s' % (NICK, chan, msg), 4)
 
     def connect(self):
         #config_fetch()# just couldn't get it to work
@@ -168,6 +168,7 @@ class Irc:
         self.send("PRIVMSG #polish :Joined. Hi.")
     def whileSection(self):
         while True:
+            curses.curs_set(0)
             screen.refresh()
             pad.refresh(0,0, 0,0, 22,80)
             try:
@@ -185,7 +186,7 @@ class Irc:
                     if line[0] == "PING":
                         self.send("PONG %s" % line[1])
                         if PING:
-                            print_date("Pinged and ponged.", None)
+                            print_date("Pinged and ponged.", 7)
                         else:
                             pass
                     if line[1] == "PRIVMSG":
@@ -195,25 +196,27 @@ class Irc:
                         hld = multi_detect(message, HighLight)
                         if hld:
                             self.lastHL = username
-                        print_date("[%s] to <%s>: %s" % (username, channel, message), curses.COLOR_RED)
+                            print_date("[%s] to <%s>: %s" % (username, channel, message), 2)
+                        else:
+                            print_date("[%s] to <%s>: %s" % (username, channel, message), 4)
                         execfile(PLUGINFILE)
                     elif line[1] == "JOIN":
                         username = (line[0].split('!')[0])[1:]
                         if NoticeMsgOnChannelJoinOn == 1:
                             self.send("NOTICE "+username+" :"+NoticeMsgOnChannelJoin)
-                        print_date("[%s] joined the channel <%s>" % (username, ' '.join(line[2:])[1:]), 2)
+                        print_date("[%s] joined the channel <%s>" % (username, ' '.join(line[2:])[1:]), 5)
                     elif line[1] == "QUIT":
                         username = (line[0].split('!')[0])[1:]
-                        print_date("[%s] has quit: %s" % (username, ' '.join(line[2:])[1:]), None)
+                        print_date("[%s] has quit: %s" % (username, ' '.join(line[2:])[1:]), 5)
                     elif line[1] == "PART":
                         username = (line[0].split('!')[0])[1:]
                         channel = line[2]
-                        print_date("[%s] leaves from <%s>" % (username, channel), None)
+                        print_date("[%s] leaves from <%s>" % (username, channel), 5)
                     else:
-                        meineText = ' '.join(line)
+                        '''meineText = ' '.join(line) #debug lines
                         counting_lines(meineText)
-                        pad.addstr(' '.join(line)+'\n')
-                        pad.refresh(0,0, 0,0, 22,80)
+                        pad.addstr(' '.join(line)+'\n', curses.color_pair(0))
+                        pad.refresh(0,0, 0,0, 22,80)'''
                         pass
                 except IndexError:
                     pass
@@ -240,8 +243,9 @@ class InputThreadIrc (threading.Thread):
         self.variables = {}
 
     def run(self):
-        global CHAN
+        global CHAN, NICK
         while 1:
+            curses.curs_set(1)
             try:
                 self.line2 = textbox.edit()
                 unix = self.line2.decode('utf-8', 'ignore')
@@ -259,6 +263,9 @@ class InputThreadIrc (threading.Thread):
                 command = inputArray[0]
                 command = command[1:]
                 if command == 'q': # quit
+                    curses.nocbreak()
+                    screen.keypad(0)
+                    curses.echo()
                     curses.endwin()
                     os._exit(1)
                     break
@@ -321,13 +328,13 @@ class InputThreadIrc (threading.Thread):
                         chan = inputArray[1]
                     IrcC.send('PART '+chan)
                     execute = False
-                    print_date("[%s] leaves from <%s>" % (NICK, chan), None)
+                    print_date("[%s] leaves from <%s>" % (NICK, chan), 5)
                 elif command == 'nick':
-                    global NICK
+                    #global NICK
                     execute = False
                     new_nick = inputArray[1]
                     IrcC.send('NICK '+new_nick)
-                    print_date("[%s] changes nick to [%s]" % (NICK, new_nick), None)
+                    print_date("[%s] changes nick to [%s]" % (NICK, new_nick), 5)
                     NICK = new_nick
             elif execute:
                 IrcC.logger.info(" ["+NICK+"] "+self.line2+" to "+specialChan+":")

@@ -83,6 +83,9 @@ if message[0] == '!':
     if(commandMsg == "!quit" and argMsg2 == "now" and argMsg3 == '' and username in MASTERS):
         self.sendMsg(CHAN, "Bye")
         import os
+        curses.nocbreak()
+        screen.keypad(0)
+        curses.echo()
         curses.endwin()
         os._exit(1)
     else:
@@ -112,23 +115,15 @@ if message[0] == '!':
         if(argMsg3 == ''):
             rssURL = 'http://tokyotosho.info/rss.php?filter=1'
             feedrss = feedparser.parse(rssURL)
-            titlerss = u"05"+feedrss.entries[0].title
-            titlerss2 = u"05"+feedrss.entries[1].title
-            titlerss3 = u"05"+feedrss.entries[2].title
-            titlerss4 = u"05"+feedrss.entries[3].title
-            titlerss5 = u"05"+feedrss.entries[4].title
-            for item in (titlerss, titlerss2, titlerss3, titlerss4, titlerss5):
-             self.sendMsg(CHAN, item.encode('utf-8'))
+            for i in range(0, 5):
+                titlerss = u"05"+feedrss.entries[i].title
+                self.sendMsg(CHAN, titlerss.encode('utf-8'))
         if(argMsg3 == 'links'):
             rssURL = 'http://tokyotosho.info/rss.php?filter=1'
             feedrss = feedparser.parse(rssURL)
-            titlerss = u"05"+feedrss.entries[0].title+u" | Link: 03"+feedrss.entries[0].link
-            titlerss2 = u"05"+feedrss.entries[1].title+u" | Link: 03"+feedrss.entries[1].link
-            titlerss3 = u"05"+feedrss.entries[2].title+u" | Link: 03"+feedrss.entries[2].link
-            titlerss4 = u"05"+feedrss.entries[3].title+u" | Link: 03"+feedrss.entries[3].link
-            titlerss5 = u"05"+feedrss.entries[4].title+u" | Link: 03"+feedrss.entries[4].link
-            for item in (titlerss, titlerss2, titlerss3, titlerss4, titlerss5):
-                self.sendMsg(CHAN, item.encode('utf-8'))
+            for i in range(0, 5):
+                titlerss = u"05"+feedrss.entries[i].title+u" Link: 03"+feedrss.entries[0].link
+                self.sendMsg(CHAN, titlerss.encode('utf-8'))
     else:
         pass
 
