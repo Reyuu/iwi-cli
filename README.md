@@ -2,7 +2,7 @@
 
 **Created by Reyuu and maciej01.**    
 
-![That's my son!](http://www.maciej01.tk/bb32f80c44.png)
+![That's my son!](http://i.imgur.com/D3u4Pk3.png)
 
 **Based on curses**
 
