@@ -7,8 +7,22 @@ else:
 if message[0] == '!':
     commandMsg = (message.split(' ')[0])
     argMsg = (message.split(' ')[1:])
-    argMsg2 = (message.split(' ')[1])
-
+    if len(message.split(' ')) > 1:
+        argMsg2 = (message.split(' ')[1])
+    else:
+        argMsg2 = ''
+    if len(message.split(' ')) > 2:
+        argMsg3 = (message.split(' ')[2])
+    else:
+        argMsg3 = ''
+    if len(message.split(' ')) > 3:
+        argMsg4 = (message.split(' ')[3:])
+    else:
+        argMsg4 = ''
+    if len(message.split(' ')) > 1:
+        argMsgAll = (message.split(' '))[1:]
+    else:
+        argMsgAll = ''
     if(commandMsg == "!help" and argMsg2 == "all" and username in MASTERS):
         x1 = "|----------------Actuall commands:--------------------|"
         x2 = "|!roll big - rolls a big integer----------------------|"
@@ -24,30 +38,39 @@ if message[0] == '!':
     else:
         pass
 
-    if(commandMsg == "!roll" and argMsg2 == "big"):
-        x1 = int(strftime("%S", gmtime()))
-        x2 = int(strftime("%Y", gmtime()))
-        x = random.randint(1, x1*x2)
-        self.sendMsg(CHAN, username+" rolled "+str(x))
-    else:
-        pass
+    if(commandMsg == "!roll"):
+        if(argMsg2 == "big"):
+            x1 = int(strftime("%S", gmtime()))
+            x2 = int(strftime("%Y", gmtime()))
+            x = random.randint(1, x1*x2)
+            self.sendMsg(CHAN, username+" rolled "+str(x))
+        elif(argMsg2 == "small"):
+            x1 = int(strftime("%S", gmtime()))
+            x = random.randint(1, x1)
+            self.sendMsg(CHAN, username+" rolled "+str(x))
+        else:
+            try:
+                argMsg2 = int(argMsg2)
+                x = random.randint(1, argMsg2)
+                self.sendMsg(CHAN, username+" rolled "+str(x))
 
-    if(commandMsg == "!roll" and argMsg2 == "small"):
-        x1 = int(strftime("%S", gmtime()))
-        x = random.randint(1, x1)
-        self.sendMsg(CHAN, username+" rolled "+str(x))
-    else:
-        pass
+            except ValueError:
+                pass
 
     if(commandMsg == "!kick" or commandMsg == "!kill" and username in MASTERS):
-        sayMsg = ' '.join(argMsg)
-        self.send("KICK "+CHAN+" "+sayMsg)
+        sayMsg = ' '.join(argMsg4)
+        x = argMsg3+" "+sayMsg
+        x2 = ' :Inappropriate conversation'
+        if x == ' ':
+            self.send("KICK "+CHAN+" "+argMsg2+x2)
+        else:
+            self.send("KICK "+CHAN+" "+argMsg2+" :"+x)
     else:
         pass
 
     if(commandMsg == "!mode" and username is TrueMaster):
-        sayMsg = ' '.join(argMsg)
-        self.send("MODE "+CHAN+" "+sayMsg)
+        sayMsg = ' '.join(argMsg)[:]
+        self.send(sayMsg)
     else:
         pass
 
@@ -57,15 +80,16 @@ if message[0] == '!':
     else:
         pass
 
-    if(commandMsg == "!quit" and argMsg2 == "now" and username in MASTERS):
+    if(commandMsg == "!quit" and argMsg2 == "now" and argMsg3 == '' and username in MASTERS):
         self.sendMsg(CHAN, "Bye")
         import os
+        curses.endwin()
         os._exit(1)
     else:
         pass
 
     if(commandMsg == "!print" and argMsg2 == "MASTERS" and username in MASTERS):
-        self.sendMsg(CHAN, str(MASTERS))
+        self.sendMsg(CHAN, 'My masters are '+', '.join(MASTERS)[:]+'. I love them soo much. <3')
     else:
         pass
 
@@ -77,10 +101,34 @@ if message[0] == '!':
         pass
 
     if(commandMsg == "!vs"):
-        sayMsg = ' '.join(argMsg)
+        sayMsg = ''.join(argMsgAll)
         y = random.choice(sayMsg.split(' vs '))
         yu = y[0].upper()+y[1:]
         self.sendMsg(CHAN, yu+" is better!")
+    else:
+        pass
+
+    if(commandMsg == "!rss" and argMsg2 == "tokyotosho"):
+        if(argMsg3 == ''):
+            rssURL = 'http://tokyotosho.info/rss.php?filter=1'
+            feedrss = feedparser.parse(rssURL)
+            titlerss = u"05"+feedrss.entries[0].title
+            titlerss2 = u"05"+feedrss.entries[1].title
+            titlerss3 = u"05"+feedrss.entries[2].title
+            titlerss4 = u"05"+feedrss.entries[3].title
+            titlerss5 = u"05"+feedrss.entries[4].title
+            for item in (titlerss, titlerss2, titlerss3, titlerss4, titlerss5):
+             self.sendMsg(CHAN, item.encode('utf-8'))
+        if(argMsg3 == 'links'):
+            rssURL = 'http://tokyotosho.info/rss.php?filter=1'
+            feedrss = feedparser.parse(rssURL)
+            titlerss = u"05"+feedrss.entries[0].title+u" | Link: 03"+feedrss.entries[0].link
+            titlerss2 = u"05"+feedrss.entries[1].title+u" | Link: 03"+feedrss.entries[1].link
+            titlerss3 = u"05"+feedrss.entries[2].title+u" | Link: 03"+feedrss.entries[2].link
+            titlerss4 = u"05"+feedrss.entries[3].title+u" | Link: 03"+feedrss.entries[3].link
+            titlerss5 = u"05"+feedrss.entries[4].title+u" | Link: 03"+feedrss.entries[4].link
+            for item in (titlerss, titlerss2, titlerss3, titlerss4, titlerss5):
+                self.sendMsg(CHAN, item.encode('utf-8'))
     else:
         pass
 
@@ -88,6 +136,12 @@ if message[0] == '!':
         self.send(values_dict[str(argMsg2)])
     else:
         pass'''
+
+    if (commandMsg == "!raw"):
+        sayMsg = ' '.join(argMsg)[:]
+        self.send(sayMsg)
+    else:
+        pass
 
     if (commandMsg == "!exec" and username is TrueMaster):
         sayMsg = ' '.join(argMsg)
