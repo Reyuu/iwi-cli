@@ -46,23 +46,23 @@ def fetchSettings():
             print "[!] Error have happened while fetching settings from configirc.ini!"
             sys.exit(1)
 
-def maketextbox(h,w,y,x,value="",deco=None,textColorpair=0,decoColorpair=0):
+def maketextbox(h,w,y,x,value=u"",deco=None,textColorpair=0,decoColorpair=0):
     # thanks to http://stackoverflow.com/a/5326195/8482 for this
     global nw
     nw = curses.newwin(h,w,y,x)
     txtbox = curses.textpad.Textbox(nw,insert_mode=True)
-    if deco=="frame":
+    if deco==u"frame":
         screen.attron(decoColorpair)
         curses.textpad.rectangle(screen,y-1,x-1,y+h,x+w)
         screen.attroff(decoColorpair)
-    elif deco=="underline":
+    elif deco==u"underline":
         screen.hline(y+1,x,underlineChr,w,decoColorpair)
  
     nw.addstr(0,0,value,textColorpair)
     nw.attron(textColorpair)
     screen.refresh()
     return nw,txtbox
-textwin,textbox = maketextbox(1,79, 23,1,"")
+textwin,textbox = maketextbox(1,79, 23,1,u"")
 
 def multi_detect(string, inputArray):
     for item in inputArray:
@@ -77,7 +77,6 @@ def print_date(msg):
     pad.refresh(0,0, 0,0, 22,80)
     unix = msg.decode('utf-8', 'ignore')
     msg = unix.encode('utf-8', 'ignore')
-    #pad.addstr(strftime("[*] [%H:%M:%S] "+msg+'\n', gmtime()))
     if(counter2 == 21):
         if(len(msg) >= 80):
             pad.scrollok(1)
@@ -247,7 +246,10 @@ class InputThreadIrc (threading.Thread):
             execute, specialChan = True, CHAN
             self.variables['hl'] = IrcC.lastHL
             self.variables['lm'] = self.lastMessage[1]
-            if(self.line2[0] == ':'):
+            if(self.line2 == ''):
+                execute = False
+                pass
+            elif(self.line2[0] == ':'):
                 inputArray = self.line2.replace('\n', '').split(' ')
                 command = inputArray[0]
                 command = command[1:]
@@ -302,7 +304,7 @@ class InputThreadIrc (threading.Thread):
                             new_msg += word
                         new_msg += ' '
                     self.line2 = new_msg
-            if execute:
+            elif execute:
                 IrcC.logger.info(" ["+NICK+"] "+self.line2+" to "+specialChan+":")
                 IrcC.sendMsg(specialChan, self.line2)
                 self.lastMessage[1] = self.line2
