@@ -2,17 +2,18 @@
 # -*- coding: utf-8 -*-
 import sys, socket, random, string, time, logging, threading, ConfigParser, feedparser, os, curses, curses.textpad, locale
 from time import gmtime, strftime
-global HOST, PORT, NICK, IDENT, REALNAME, CHAN, TIMEOUTTIME, PING, PLUGINFILE, MASTERS, counter, TrueMaster, NoticeMsgOnChannelJoin, NoticeMsgOnChannelJoinOn, HighLight, counter2, nw
+global HOST, PORT, NICK, IDENT, REALNAME, CHAN, TIMEOUTTIME, PING, PLUGINFILE, MASTERS, counter, TrueMaster, NoticeMsgOnChannelJoin, NoticeMsgOnChannelJoinOn, HighLight, counter2, nw, Y_LINES, X_COLS
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 counter = 0
 counter2 = 0
 locale.setlocale(locale.LC_ALL,"")
 screen = curses.initscr()
+Y_LINES, X_COLS = screen.getmaxyx()
 curses.start_color()
 curses.use_default_colors()
 for i in range(0, curses.COLORS):
     curses.init_pair(i + 1, i, -1)
-pad = curses.newpad(24, 80)
+pad = curses.newpad(Y_LINES, X_COLS)
 pad.idlok(1)
 pad.scrollok(1)
 pad.nodelay(1)
@@ -64,7 +65,7 @@ def maketextbox(h,w,y,x,value=u"",deco=None,textColorpair=0,decoColorpair=0):
     nw.attron(textColorpair)
     screen.refresh()
     return nw,txtbox
-textwin,textbox = maketextbox(0,160, 23,1,"")
+textwin,textbox = maketextbox(1,X_COLS*2, Y_LINES-1,1,"")
 
 def multi_detect(string, inputArray):
     for item in inputArray:
@@ -75,41 +76,26 @@ def multi_detect(string, inputArray):
 
 def counting_lines(msg):
     global counter2
-    if(counter2 == 21):
-        if(len(msg) >= 80):
+    if(counter2 == Y_LINES-3):
+        if(len(msg) >= X_COLS):
             pad.scrollok(1)
             pad.scroll(1)
             pad.idlok(1)
-        if(len(msg) >= 160):
-            pad.scrollok(1)
-            pad.scroll(1)
-            pad.idlok(1)
-            pad.scrollok(1)
-            pad.scroll(1)
-            pad.idlok(1)
-        if(len(msg) >= 240):
-            pad.scrollok(1)
-            pad.scroll(1)
-            pad.idlok(1)
-            pad.scrollok(1)
-            pad.scroll(1)
-            pad.idlok(1)
-            pad.scrollok(1)
-            pad.scroll(1)
-            pad.idlok(1)
-        if(len(msg) >= 320):
-            pad.scrollok(1)
-            pad.scroll(1)
-            pad.idlok(1)
-            pad.scrollok(1)
-            pad.scroll(1)
-            pad.idlok(1)
-            pad.scrollok(1)
-            pad.scroll(1)
-            pad.idlok(1)
-            pad.scrollok(1)
-            pad.scroll(1)
-            pad.idlok(1)
+        if(len(msg) >= X_COLS*2):
+            for item in (0, 2):
+                pad.scrollok(1)
+                pad.scroll(1)
+                pad.idlok(1)
+        if(len(msg) >= X_COLS*3):
+            for item in (0, 3):
+                pad.scrollok(1)
+                pad.scroll(1)
+                pad.idlok(1)
+        if(len(msg) >= X_COLS*4):
+            for item in (0, 4):
+                pad.scrollok(1)
+                pad.scroll(1)
+                pad.idlok(1)
         else:
             pad.scrollok(1)
             pad.idlok(1)
@@ -120,12 +106,12 @@ def counting_lines(msg):
 
 def print_date(msg, colour):
     screen.refresh()
-    pad.refresh(0,0, 0,0, 22,80)
+    pad.refresh(0,0, 0,0, Y_LINES-1,X_COLS)
     unix = msg.decode('utf-8', 'ignore')
     msg = unix.encode('utf-8', 'ignore')
     counting_lines(msg)
     screen.refresh()
-    pad.refresh(0,0, 0,0, 22,80)
+    pad.refresh(0,0, 0,0, Y_LINES-1,X_COLS)
     if(curses.has_colors):
         x = strftime("[*] [%H:%M:%S] ", gmtime())
         pad.addstr(str(x), curses.color_pair(colour))
@@ -135,7 +121,7 @@ def print_date(msg, colour):
     else:
         pad.addstr(strftime("[*] [%H:%M:%S] "+msg+"\n", gmtime()))
     screen.refresh()
-    pad.refresh(0,0, 0,0, 22,80)
+    pad.refresh(0,0, 0,0, Y_LINES-1,X_COLS)
     
 class Irc:
     def __init__(self):
@@ -170,7 +156,7 @@ class Irc:
         while True:
             curses.curs_set(0)
             screen.refresh()
-            pad.refresh(0,0, 0,0, 22,80)
+            pad.refresh(0,0, 0,0, Y_LINES-1,X_COLS)
             try:
                 readbuffer = self.socket.recv(1024)
             except:
@@ -216,7 +202,7 @@ class Irc:
                         '''meineText = ' '.join(line) #debug lines
                         counting_lines(meineText)
                         pad.addstr(' '.join(line)+'\n', curses.color_pair(0))
-                        pad.refresh(0,0, 0,0, 22,80)'''
+                        pad.refresh(0,0, 0,0, 22,X_COLS)'''
                         pass
                 except IndexError:
                     pass
