@@ -1,56 +1,50 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys, socket, random, string, time, logging, threading, ConfigParser, feedparser, os, curses, curses.textpad, locale
+import sys
+import socket
+import random
+import string
+import time
+import logging
+import threading
+import ConfigParser
+import feedparser
+import os
+import curses
+import curses.textpad
+import locale
+import argparse
 from time import gmtime, strftime
+#from configs import *
 global HOST, PORT, NICK, IDENT, REALNAME, CHAN, TIMEOUTTIME, PING, PLUGINFILE, MASTERS, counter, TrueMaster, NoticeMsgOnChannelJoin, NoticeMsgOnChannelJoinOn, HighLight, counter2, nw, Y_LINES, X_COLS
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 counter = 0
 counter2 = 0
+execfile("configs.py")
+fetchSettings()
+argSettings()
+
 locale.setlocale(locale.LC_ALL,"")
 screen = curses.initscr()
 Y_LINES, X_COLS = screen.getmaxyx()
 curses.start_color()
 curses.use_default_colors()
+
 for i in range(0, curses.COLORS):
     curses.init_pair(i + 1, i, -1)
+curses.init_pair(10, curses.COLOR_WHITE, curses.COLOR_BLACK)
+
 pad = curses.newpad(Y_LINES, X_COLS)
 pad.idlok(1)
 pad.scrollok(1)
 pad.nodelay(1)
 pad.syncok(1)
 pad.timeout(0)
+
 curses.noecho()
 curses.curs_set(1)
-pad_pos = 0
-def fetchSettings():
-    config = ConfigParser.ConfigParser()
-    config.read('configirc.ini')
-    try:
-        global HOST, PORT, NICK, IDENT, REALNAME, CHAN, TIMEOUTTIME, PING, PLUGINFILE, MASTERS, counter, TrueMaster, NoticeMsgOnChannelJoin, NoticeMsgOnChannelJoinOn, HighLight
-        HOST = config.get('Server', 'Server')
-        PORT = int(config.get('Server', 'Port'))
-        CHAN = config.get('Server', 'Channel')
 
-        NICK = config.get('Bot', 'Nick')
-        IDENT = config.get('Bot', 'Ident')
-        REALNAME = config.get('Bot', 'RealName')
-
-        NoticeMsgOnChannelJoin = config.get('Messages', 'WelcomeMsg')
-        NoticeMsgOnChannelJoinOn = config.get('Messages', 'WelcomeMsgActive')
-        PING = config.get('Messages', 'OutputPing')
-        HighLight = config.get('Messages', 'HighlightPhrases').split(',')
-
-        TIMEOUTTIME = float(config.get('Settings', 'SocketDelay'))
-        PLUGINFILE = config.get('Settings', 'PluginFile')
-        TrueMaster = config.get('Settings', 'BotOwner')
-        MASTERS = config.get('Settings', 'Masters').replace(' ', '').split(',')
-
-
-    except:
-            print "[!] Error have happened while fetching settings from configirc.ini!"
-            sys.exit(1)
-
-def maketextbox(h,w,y,x,value=u"",deco=None,textColorpair=0,decoColorpair=0):
+def maketextbox(h,w,y,x,value=u"",deco=None,textColorpair=10,decoColorpair=0):
     # thanks to http://stackoverflow.com/a/5326195/8482 for this
     global nw
     nw = curses.newwin(h,w,y,x)
@@ -62,8 +56,9 @@ def maketextbox(h,w,y,x,value=u"",deco=None,textColorpair=0,decoColorpair=0):
     elif deco=="underline":
         screen.hline(y+1,x,underlineChr,w,decoColorpair)
  
-    nw.addstr(0,0,value,textColorpair)
-    nw.attron(textColorpair)
+    nw.addstr(0,0,value,curses.color_pair(0))
+    nw.bkgd(' ', curses.color_pair(textColorpair))
+    #nw.attron(textColorpair)
     screen.refresh()
     return nw,txtbox
 
@@ -73,6 +68,11 @@ def multi_detect(string, inputArray):
             curses.beep()
             return 1
     return 0
+
+def clear_input():
+    nw.clear()
+    #screen.refresh()
+    nw.refresh()
 
 def counting_lines(msg):
     global counter2
@@ -153,8 +153,19 @@ class Irc:
         time.sleep(2)
         #self.send("PRIVMSG #polish :Joined. Hi.")
     def whileSection(self):
+        #global Y_LINES, X_COLS, textwin, pad, screen
         while True:
-            #screen.refresh()
+            '''Y_LINES, X_COLS = screen.getmaxyx()
+            if curses.is_term_resized(Y_LINES, X_COLS):
+                screen.clear()
+                pad.clear()
+                del screen
+                del pad
+                del textwin
+                screen = curses.initscr()
+                pad = curses.newpad(Y_LINES, X_COLS)
+                textwin,textbox = maketextbox(1,X_COLS, Y_LINES-1,0,"")'''
+            screen.refresh()
             pad.refresh(0,0, 0,0, Y_LINES-2,X_COLS)
             nw.refresh()
             try:
@@ -258,30 +269,38 @@ class InputThreadIrc (threading.Thread):
                     if len(inputArray) > 1:
                         self.line2 = self.line2 + ' ' + ' '.join(inputArray[1:])
                         self.line2 = self.line2.replace('\n', '')
+                    clear_input()
                 elif command == 'p': # private message to specified user/chan
                     specialChan = inputArray[1]
                     self.line2 = ' '.join(inputArray[2:])
+                    clear_input()
                 elif command == 'r': # raw input to server
                     execute = False
+                    clear_input()
                     IrcC.send(' '.join(inputArray[1:]))
                 elif command == 'j': # join to a channel
                     execute = False
+                    clear_input()
                     IrcC.send('JOIN '+inputArray[1])
                 elif command == 'ch': # changes channel
                     socket_x1.CHAN = inputArray[1]
                     CHAN = inputArray[1]
                     execute = False
+                    clear_input()
                 elif command == 'ms': # sets a message to reuse
                     self.messages[inputArray[1]] = ' '.join(inputArray[2:])
                     execute = False
+                    clear_input()
                 elif command == 'md': # displays a message
                     if inputArray[1] in self.messages:
                         self.line2 = self.messages[inputArray[1]]
                     else:
                         execute = False
+                    clear_input()
                 elif command == 'vs': # sets a variable
                     self.variables[inputArray[1]] = ' '.join(inputArray[2:])
                     execute = False
+                    clear_input()
                 elif command == 'v': # sends a message with variables
                     words = inputArray[1:]
                     new_msg = ''
@@ -299,12 +318,14 @@ class InputThreadIrc (threading.Thread):
                             new_msg += word
                         new_msg += ' '
                     self.line2 = new_msg
+                    clear_input()
                 elif command in ('names', 'n'):
                     tunnel = specialChan
                     if len(inputArray) > 1:
                         tunnel = inputArray[1]
                     IrcC.send('NAMES '+tunnel)
                     execute = False
+                    clear_input()
                 elif command == 'part':
                     chan = specialChan
                     if len(inputArray) > 1:
@@ -312,6 +333,7 @@ class InputThreadIrc (threading.Thread):
                     IrcC.send('PART '+chan)
                     execute = False
                     print_date("[%s] leaves from <%s>" % (NICK, chan), 5)
+                    clear_input()
                 elif command == 'nick':
                     #global NICK
                     execute = False
@@ -319,16 +341,15 @@ class InputThreadIrc (threading.Thread):
                     IrcC.send('NICK '+new_nick)
                     print_date("[%s] changes nick to [%s]" % (NICK, new_nick), 5)
                     NICK = new_nick
+                    clear_input()
             elif execute:
                 IrcC.logger.info(" ["+NICK+"] "+self.line2+" to "+specialChan+":")
                 IrcC.sendMsg(specialChan, self.line2)
                 self.lastMessage[1] = self.line2
                 self.lastMessage[0] = specialChan
-                nw.clear()
-                #screen.refresh()
-                nw.refresh()
-textwin,textbox = maketextbox(1,X_COLS, Y_LINES-1,1,"")
-fetchSettings()
+                clear_input()
+        
+textwin,textbox = maketextbox(1,X_COLS, Y_LINES-1,0,"")
 
 thread1 = IrcThread()
 thread2 = InputThreadIrc()
@@ -336,5 +357,3 @@ thread2.daemon = 1
 
 thread1.start()
 thread2.start()
-
-
