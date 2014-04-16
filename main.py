@@ -20,6 +20,7 @@ pad.nodelay(1)
 pad.syncok(1)
 pad.timeout(0)
 curses.noecho()
+curses.curs_set(1)
 pad_pos = 0
 def fetchSettings():
     config = ConfigParser.ConfigParser()
@@ -65,7 +66,6 @@ def maketextbox(h,w,y,x,value=u"",deco=None,textColorpair=0,decoColorpair=0):
     nw.attron(textColorpair)
     screen.refresh()
     return nw,txtbox
-textwin,textbox = maketextbox(1,X_COLS*2, Y_LINES-1,1,"")
 
 def multi_detect(string, inputArray):
     for item in inputArray:
@@ -106,12 +106,12 @@ def counting_lines(msg):
 
 def print_date(msg, colour):
     screen.refresh()
-    pad.refresh(0,0, 0,0, Y_LINES-1,X_COLS)
+    pad.refresh(0,0, 0,0, Y_LINES-2,X_COLS)
     unix = msg.decode('utf-8', 'ignore')
     msg = unix.encode('utf-8', 'ignore')
     counting_lines(msg)
     screen.refresh()
-    pad.refresh(0,0, 0,0, Y_LINES-1,X_COLS)
+    pad.refresh(0,0, 0,0, Y_LINES-2,X_COLS)
     if(curses.has_colors):
         x = strftime("[*] [%H:%M:%S] ", gmtime())
         pad.addstr(str(x), curses.color_pair(colour))
@@ -121,7 +121,7 @@ def print_date(msg, colour):
     else:
         pad.addstr(strftime("[*] [%H:%M:%S] "+msg+"\n", gmtime()))
     screen.refresh()
-    pad.refresh(0,0, 0,0, Y_LINES-1,X_COLS)
+    pad.refresh(0,0, 0,0, Y_LINES-2,X_COLS)
     
 class Irc:
     def __init__(self):
@@ -151,12 +151,12 @@ class Irc:
         self.send("JOIN %s" % (CHAN))
         self.socket.settimeout(TIMEOUTTIME)
         time.sleep(2)
-        self.send("PRIVMSG #polish :Joined. Hi.")
+        #self.send("PRIVMSG #polish :Joined. Hi.")
     def whileSection(self):
         while True:
-            curses.curs_set(0)
-            screen.refresh()
-            pad.refresh(0,0, 0,0, Y_LINES-1,X_COLS)
+            #screen.refresh()
+            pad.refresh(0,0, 0,0, Y_LINES-2,X_COLS)
+            nw.refresh()
             try:
                 readbuffer = self.socket.recv(1024)
             except:
@@ -199,10 +199,10 @@ class Irc:
                         channel = line[2]
                         print_date("[%s] leaves from <%s>" % (username, channel), 5)
                     else:
-                        '''meineText = ' '.join(line) #debug lines
+                        meineText = ' '.join(line) #debug lines
                         counting_lines(meineText)
                         pad.addstr(' '.join(line)+'\n', curses.color_pair(0))
-                        pad.refresh(0,0, 0,0, 22,X_COLS)'''
+                        pad.refresh(0,0, 0,0, Y_LINES-2,X_COLS)
                         pass
                 except IndexError:
                     pass
@@ -222,8 +222,6 @@ class InputThreadIrc (threading.Thread):
     def __init__(self):
         global CHAN
         threading.Thread.__init__(self)
-        #socket_x1.fetchSettings()
-        curses.curs_set(1)
         self.lastMessage = [CHAN, '']
         self.messages = {}
         self.variables = {}
@@ -231,7 +229,6 @@ class InputThreadIrc (threading.Thread):
     def run(self):
         global CHAN, NICK
         while 1:
-            curses.curs_set(1)
             try:
                 self.line2 = textbox.edit()
                 unix = self.line2.decode('utf-8', 'ignore')
@@ -327,9 +324,10 @@ class InputThreadIrc (threading.Thread):
                 IrcC.sendMsg(specialChan, self.line2)
                 self.lastMessage[1] = self.line2
                 self.lastMessage[0] = specialChan
-            nw.clear()
-            screen.refresh()
-            nw.refresh()
+                nw.clear()
+                #screen.refresh()
+                nw.refresh()
+textwin,textbox = maketextbox(1,X_COLS, Y_LINES-1,1,"")
 fetchSettings()
 
 thread1 = IrcThread()
