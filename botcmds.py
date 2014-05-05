@@ -57,7 +57,7 @@ if message[0] == '!':
             except ValueError:
                 pass
 
-    if(commandMsg == "!kick" or commandMsg == "!kill" and username in MASTERS):
+    if((commandMsg == "!kick" or commandMsg == "!kill") and username in MASTERS):
         sayMsg = ' '.join(argMsg4)
         x = argMsg3+" "+sayMsg
         x2 = ' :Inappropriate conversation'
@@ -132,7 +132,7 @@ if message[0] == '!':
     else:
         pass'''
 
-    if (commandMsg == "!raw"):
+    if (commandMsg == "!raw" and username in MASTERS):
         sayMsg = ' '.join(argMsg)[:]
         self.send(sayMsg)
     else:

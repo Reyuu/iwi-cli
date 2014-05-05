@@ -8,7 +8,6 @@ import time
 import logging
 import threading
 import ConfigParser
-import feedparser
 import os
 import curses
 import curses.textpad
