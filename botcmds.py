@@ -70,7 +70,7 @@ if message[0] == '!':
 
     if(commandMsg == "!mode" and username is TrueMaster):
         sayMsg = ' '.join(argMsg)[:]
-        self.send(sayMsg)
+        self.send("MODE "+CHAN+" "+sayMsg)
     else:
         pass
 
@@ -104,7 +104,7 @@ if message[0] == '!':
         pass
 
     if(commandMsg == "!vs"):
-        sayMsg = ''.join(argMsgAll)
+        sayMsg = ' '.join(argMsgAll)
         y = random.choice(sayMsg.split(' vs '))
         yu = y[0].upper()+y[1:]
         self.sendMsg(CHAN, yu+" is better!")
@@ -112,6 +112,7 @@ if message[0] == '!':
         pass
 
     if(commandMsg == "!rss" and argMsg2 == "tokyotosho"):
+        import feedparser
         if(argMsg3 == ''):
             rssURL = 'http://tokyotosho.info/rss.php?filter=1'
             feedrss = feedparser.parse(rssURL)
